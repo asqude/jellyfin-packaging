@@ -507,8 +507,7 @@ def build_docker(
     if local:
         return
 
-    if not getenv('DOCKER_USERNAME') or not getenv('DOCKER_TOKEN'):
-        log("Warning: No DOCKER_USERNAME or DOCKER_TOKEN in environment; skipping manifest build and push (DockerHub and GHCR).")
+    if local:
         return
 
     def build_manifests(server, images):
@@ -589,49 +588,55 @@ def build_docker(
 
         return manifests
 
-    # Log in to DockerHub
-    os.system(
-        f"docker login -u {getenv('DOCKER_USERNAME')} -p {getenv('DOCKER_TOKEN')} 2>&1"
-    )
+    if getenv('DOCKER_USERNAME') and getenv('DOCKER_TOKEN'):
+        # Log in to DockerHub
+        os.system(
+            f"docker login -u {getenv('DOCKER_USERNAME')} -p {getenv('DOCKER_TOKEN')} 2>&1"
+        )
 
-    # Push the images to DockerHub
-    for image in images_hub:
-        log(f">>> Pushing image {image} to DockerHub")
-        log(f">>>> docker push {image} 2>&1")
-        os.system(f"docker push {image} 2>&1")
+        # Push the images to DockerHub
+        for image in images_hub:
+            log(f">>> Pushing image {image} to DockerHub")
+            log(f">>>> docker push {image} 2>&1")
+            os.system(f"docker push {image} 2>&1")
 
-    manifests_hub = build_manifests("docker.io", images_hub)
+        manifests_hub = build_manifests("docker.io", images_hub)
 
-    # Push the images and manifests to DockerHub
-    for manifest in manifests_hub:
-        log(f">>> Pushing manifest {manifest} to DockerHub")
-        log(f">>>> docker manifest push --purge {manifest} 2>&1")
-        os.system(f"docker manifest push --purge {manifest} 2>&1")
+        # Push the images and manifests to DockerHub
+        for manifest in manifests_hub:
+            log(f">>> Pushing manifest {manifest} to DockerHub")
+            log(f">>>> docker manifest push --purge {manifest} 2>&1")
+            os.system(f"docker manifest push --purge {manifest} 2>&1")
 
-    # Log out of DockerHub
-    os.system("docker logout")
+        # Log out of DockerHub
+        os.system("docker logout")
+    else:
+        log("Warning: No DOCKER_USERNAME or DOCKER_TOKEN in environment; skipping manifest build and push (DockerHub).")
 
-    # Log in to GHCR
-    os.system(
-        f"docker login -u {getenv('GHCR_USERNAME')} -p {getenv('GHCR_TOKEN')} ghcr.io 2>&1"
-    )
+    if getenv('GHCR_USERNAME') and getenv('GHCR_TOKEN'):
+        # Log in to GHCR
+        os.system(
+            f"docker login -u {getenv('GHCR_USERNAME')} -p {getenv('GHCR_TOKEN')} ghcr.io 2>&1"
+        )
 
-    # Push the images to GHCR
-    for image in images_ghcr:
-        log(f">>> Pushing image {image} to GHCR")
-        log(f">>>> docker push {image} 2>&1")
-        os.system(f"docker push {image} 2>&1")
+        # Push the images to GHCR
+        for image in images_ghcr:
+            log(f">>> Pushing image {image} to GHCR")
+            log(f">>>> docker push {image} 2>&1")
+            os.system(f"docker push {image} 2>&1")
 
-    manifests_ghcr = build_manifests("ghcr.io", images_ghcr)
+        manifests_ghcr = build_manifests("ghcr.io", images_ghcr)
 
-    # Push the images and manifests to GHCR
-    for manifest in manifests_ghcr:
-        log(f">>> Pushing manifest {manifest} to GHCR")
-        log(f">>>> docker manifest push --purge {manifest} 2>&1")
-        os.system(f"docker manifest push --purge {manifest} 2>&1")
+        # Push the images and manifests to GHCR
+        for manifest in manifests_ghcr:
+            log(f">>> Pushing manifest {manifest} to GHCR")
+            log(f">>>> docker manifest push --purge {manifest} 2>&1")
+            os.system(f"docker manifest push --purge {manifest} 2>&1")
 
-    # Log out of GHCR
-    os.system("docker logout")
+        # Log out of GHCR
+        os.system("docker logout")
+    else:
+        log("Warning: No GHCR_USERNAME or GHCR_TOKEN in environment; skipping manifest build and push (GHCR).")
 
 
 def build_nuget(
