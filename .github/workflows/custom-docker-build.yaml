@@ -1,0 +1,61 @@
+name: "Custom Docker Build"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (default: date-based)'
+        required: false
+        type: string
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  Docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "Set version"
+        id: version
+        run: |-
+          if [ -z "${{ inputs.version }}" ]; then
+            echo "JELLYFIN_VERSION=$(date +'%Y%m%d%H')" >> $GITHUB_ENV
+          else
+            echo "JELLYFIN_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+          fi
+          
+          if [ "${{ inputs.debug }}" = "true" ]; then
+            echo "DEBUG_FLAG=--debug" >> $GITHUB_ENV
+          else
+            echo "DEBUG_FLAG=" >> $GITHUB_ENV
+          fi
+
+      - name: "Install dependencies"
+        run: |-
+          sudo apt-get update
+          sudo apt-get install --yes python3-git python3-yaml
+
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Prepare repository"
+        run: |-
+          # Check out master by default, or the branch that this workflow is running on if checkout.py allows
+          # checkout.py defaults to origin/master for 'master' target.
+          # If you want to use your fork's master branch for submodules, ensure .gitmodules points to them.
+          ./checkout.py master
+
+      - name: "Run builder for Docker containers"
+        env:
+          # Use GITHUB_TOKEN for GHCR authentication
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          # Ensure build.py has executable permissions
+          chmod +x build.py
+          sudo --preserve-env ./build.py ${{ env.JELLYFIN_VERSION }} docker ${{ env.DEBUG_FLAG }}

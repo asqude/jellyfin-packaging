@@ -125,7 +125,7 @@ docker:
       PACKAGE_ARCH: arm64
       TARGET_ARCH: arm64/v8
   dockerfile: docker/Dockerfile
-  imagename: jellyfin/jellyfin
+  imagename: asqude/jellyfin
 
 # Nuget packages
 nuget:
