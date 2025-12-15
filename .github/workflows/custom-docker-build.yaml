@@ -7,6 +7,11 @@ on:
         description: 'Version string (default: date-based)'
         required: false
         type: string
+      source_ref:
+        description: 'Source branch or tag to build from'
+        required: true
+        default: 'master'
+        type: string
       debug:
         description: 'Enable debug build'
         type: boolean
@@ -45,10 +50,9 @@ jobs:
 
       - name: "Prepare repository"
         run: |-
-          # Check out master by default, or the branch that this workflow is running on if checkout.py allows
-          # checkout.py defaults to origin/master for 'master' target.
-          # If you want to use your fork's master branch for submodules, ensure .gitmodules points to them.
-          ./checkout.py master
+          # Check out the requested ref (branch or tag)
+          # Ensure .gitmodules points to your forks if using custom branches.
+          ./checkout.py ${{ inputs.source_ref }}
 
       - name: "Run builder for Docker containers"
         env:
